@@ -39,6 +39,15 @@ fi
 # Ensure brew is in PATH
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
+# Ensure brew is in PATH for future shell sessions
+if ! grep -q 'brew shellenv' "$HOME/.bashrc" 2>/dev/null; then
+    log_info "Adding Homebrew to ~/.bashrc..."
+    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> "$HOME/.bashrc"
+    log_success "Homebrew PATH added to ~/.bashrc."
+else
+    log_success "Homebrew already in ~/.bashrc, skipping."
+fi
+
 for pkg in "${PACKAGES[@]}"; do
     if brew list --formula | grep -q "^${pkg}$"; then
         log_success "$pkg already installed, skipping."
