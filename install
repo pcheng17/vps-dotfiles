@@ -23,7 +23,7 @@ git config --global core.editor "nvim"
 git config --global init.defaultBranch "main"
 git config --global pull.rebase "false"
 git config --global rebase.updaterefs "true"
-git config --global credential.https://github.com.helper "!/home/linuxbrew/.linuxbrew/bin/gh auth git-credential"
+git config --global --replace-all credential.https://github.com.helper "!/home/linuxbrew/.linuxbrew/bin/gh auth git-credential"
 log_success "Git configured."
 
 # Install Homebrew if not already installed
