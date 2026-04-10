@@ -1,0 +1,76 @@
+#!/bin/bash
+set -e
+
+# Packages to install
+PACKAGES=(cmake gcc go ninja neovim fzf fd gh ripgrep rust lazygit lld llvm qhull openvdb boost uv)
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+log_info() { echo "[INFO] $*"; }
+log_success() { echo "[OK]   $*"; }
+
+# Set up Claude Code config
+mkdir -p "$HOME/.claude"
+ln -sf "$SCRIPT_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+ln -sf "$SCRIPT_DIR/claude/settings.json" "$HOME/.claude/settings.json"
+log_success "Claude Code config symlinked."
+
+# Install Homebrew if not already installed
+if ! command -v brew &>/dev/null; then
+    log_info "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+else
+    log_success "Homebrew already installed, skipping."
+fi
+
+# Ensure brew is in PATH
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+for pkg in "${PACKAGES[@]}"; do
+    if brew list --formula | grep -q "^${pkg}$"; then
+        log_success "$pkg already installed, skipping."
+    else
+        log_info "Installing $pkg..."
+        brew install "$pkg"
+    fi
+done
+
+# Install nvm and Node.js 22
+if [[ ! -d "$HOME/.nvm" ]]; then
+    log_info "Installing nvm..."
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+else
+    log_success "nvm already installed, skipping."
+fi
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+
+if ! nvm ls 22 &>/dev/null; then
+    log_info "Installing Node.js 22..."
+    nvm install 22
+    nvm alias default 22
+else
+    log_success "Node.js 22 already installed, skipping."
+fi
+
+# Install Claude Code if not already installed
+if ! command -v claude &>/dev/null; then
+    log_info "Installing Claude Code..."
+    curl -fsSL https://claude.ai/install.sh | bash
+else
+    log_success "Claude Code already installed, skipping."
+fi
+
+# Install Docker Engine if not already installed
+if ! command -v docker &>/dev/null; then
+    log_info "Installing Docker Engine..."
+    curl -fsSL https://get.docker.com | sh
+    sudo usermod -aG docker "$USER"
+    log_info "Docker installed. You may need to log out and back in for group changes to take effect."
+else
+    log_success "Docker already installed, skipping."
+fi
+
+log_success "Done!"
