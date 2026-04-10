@@ -7,5 +7,7 @@
 
 ## Software development guidelines
 
-- The `main` branch should always remain free of changes. Never commit nor push to the `main` branch.
-- All work must be done in a new worktree, on its own branch.
+- Always create a new branch and worktree for new changes. 
+- The `main` branch should always remain free of changes. 
+- Never commit nor push to the `main` branch.
+- If the user asks to tackle multiple tasks at once that can be done in parallel, use separate agents for each task, each working on its own worktree.
