@@ -2,7 +2,8 @@
 set -e
 
 # Packages to install
-PACKAGES=(cmake gcc go ninja neovim fzf fd gh ripgrep rustup lazygit lld llvm uv)
+BREW_PACKAGES=(cmake lazygit ninja neovim fzf fd gh opencode ripgrep uv)
+APT_PACKAGES=(clang build-essential)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -31,6 +32,23 @@ git config --global rebase.updaterefs "true"
 git config --global --replace-all credential.https://github.com.helper "!$(brew --prefix)/bin/gh auth git-credential"
 log_success "Git configured."
 
+# Install apt packages
+APT_TO_INSTALL=()
+for pkg in "${APT_PACKAGES[@]}"; do
+    if dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed"; then
+        log_success "$pkg already installed, skipping."
+    else
+        log_info "Queuing $pkg for apt installation..."
+        APT_TO_INSTALL+=("$pkg")
+    fi
+done
+
+if [[ ${#APT_TO_INSTALL[@]} -gt 0 ]]; then
+    log_info "Installing apt packages: ${APT_TO_INSTALL[*]}"
+    sudo apt-get update -qq
+    sudo apt-get install -y "${APT_TO_INSTALL[@]}"
+fi
+
 # Install Homebrew if not already installed
 if ! command -v brew &>/dev/null; then
     log_info "Installing Homebrew..."
@@ -45,7 +63,7 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 
 INSTALLED_PACKAGES=$(brew list --formula 2>/dev/null)
 TO_INSTALL=()
-for pkg in "${PACKAGES[@]}"; do
+for pkg in "${BREW_PACKAGES[@]}"; do
     if echo "$INSTALLED_PACKAGES" | grep -q "^${pkg}$"; then
         log_success "$pkg already installed, skipping."
     else
