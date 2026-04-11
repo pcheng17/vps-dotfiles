@@ -2,7 +2,8 @@ name: Test install Script
 
 on:
   pull_request:
-    branches: [main]
+    branches:
+        - main
 
 jobs:
   install:
