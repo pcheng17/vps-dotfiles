@@ -1,7 +1,9 @@
 alias rld='source ~/.bashrc'
 alias ..='cd ..'
 
+alias g='git'
 alias cy='claude --dangerously-skip-permissions'
 alias lg='lazygit'
+alias oc='opencode'
 alias v='nvim'
 alias ta='tmux attach'
