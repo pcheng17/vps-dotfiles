@@ -1,0 +1,13 @@
+name: Test install script
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run install script
+        run: bash install
