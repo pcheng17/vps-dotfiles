@@ -1,0 +1,24 @@
+name: Install Script
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  install:
+    name: Run install script
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: First run
+        run: ./install
+
+      - name: Second run (idempotency check)
+        run: ./install
