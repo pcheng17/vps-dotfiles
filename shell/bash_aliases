@@ -7,3 +7,7 @@ alias lg='lazygit'
 alias oc='opencode'
 alias v='nvim'
 alias ta='tmux attach'
+
+alias gwls='git worktree list'
+alias gwa='git worktree add'
+alias gwrm='git wotkree remove'
