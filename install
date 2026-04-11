@@ -15,6 +15,11 @@ ln -sf "$SCRIPT_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
 ln -sf "$SCRIPT_DIR/claude/settings.json" "$HOME/.claude/settings.json"
 log_success "Claude Code config symlinked."
 
+# Set up shell config
+ln -sf "$SCRIPT_DIR/shell/bashrc" "$HOME/.bashrc"
+ln -sf "$SCRIPT_DIR/shell/bash_aliases" "$HOME/.bash_aliases"
+log_success "Shell config symlinked."
+
 # Set up essential git configuration
 log_info "Configuring git..."
 git config --global user.name "Peter Cheng"
@@ -37,15 +42,6 @@ fi
 
 # Ensure brew is in PATH
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-
-# Ensure brew is in PATH for future shell sessions
-if ! grep -q 'brew shellenv' "$HOME/.bashrc" 2>/dev/null; then
-    log_info "Adding Homebrew to ~/.bashrc..."
-    echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"' >> "$HOME/.bashrc"
-    log_success "Homebrew PATH added to ~/.bashrc."
-else
-    log_success "Homebrew already in ~/.bashrc, skipping."
-fi
 
 INSTALLED_PACKAGES=$(brew list --formula 2>/dev/null)
 TO_INSTALL=()
