@@ -47,8 +47,9 @@ else
     log_success "Homebrew already in ~/.bashrc, skipping."
 fi
 
+INSTALLED_PACKAGES=$(brew list --formula 2>/dev/null)
 for pkg in "${PACKAGES[@]}"; do
-    if brew list --formula | grep -q "^${pkg}$"; then
+    if echo "$INSTALLED_PACKAGES" | grep -q "^${pkg}$"; then
         log_success "$pkg already installed, skipping."
     else
         log_info "Installing $pkg..."
