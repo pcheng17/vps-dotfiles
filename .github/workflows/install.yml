@@ -1,12 +1,9 @@
-name: Install Script
+name: Test install Script
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
-      - main
+        - main
 
 jobs:
   install:
