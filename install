@@ -63,6 +63,15 @@ if [[ ${#TO_INSTALL[@]} -gt 0 ]]; then
     brew install "${TO_INSTALL[@]}"
 fi
 
+# Install Python 3.14 via uv
+if uv python find 3.14 &>/dev/null; then
+    log_success "Python 3.14 already installed via uv, skipping."
+else
+    log_info "Installing Python 3.14 via uv..."
+    uv python install 3.14
+    log_success "Python 3.14 installed."
+fi
+
 # Install nvm and Node.js 22
 if [[ ! -d "$HOME/.nvm" ]]; then
     log_info "Installing nvm..."
