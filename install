@@ -105,4 +105,21 @@ else
     log_success "Docker already installed, skipping."
 fi
 
+# Install qhull from pcheng17/qhull
+if command -v qhull &>/dev/null; then
+    log_success "qhull already installed, skipping."
+else
+    log_info "Installing qhull from source..."
+    QHULL_TMP=$(mktemp -d)
+    git clone --depth 1 --branch master --recurse-submodules https://github.com/pcheng17/qhull "$QHULL_TMP/qhull"
+    cmake -S "$QHULL_TMP/qhull" -B "$QHULL_TMP/qhull/build" -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_C_COMPILER=clang \
+        -DCMAKE_CXX_COMPILER=clang++ \
+        -DCMAKE_INSTALL_PREFIX=/usr/local
+    ninja -C "$QHULL_TMP/qhull/build" install -j4
+    rm -rf "$QHULL_TMP"
+    log_success "qhull installed."
+fi
+
 log_success "Done!"
