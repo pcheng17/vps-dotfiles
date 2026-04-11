@@ -2,7 +2,7 @@
 set -e
 
 # Packages to install
-PACKAGES=(cmake gcc go ninja neovim fzf fd gh ripgrep rustup lazygit lld llvm qhull openvdb boost uv tmux)
+PACKAGES=(cmake gcc go ninja neovim fzf fd gh ripgrep rustup lazygit lld llvm uv tmux)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -47,14 +47,21 @@ else
     log_success "Homebrew already in ~/.bashrc, skipping."
 fi
 
+INSTALLED_PACKAGES=$(brew list --formula 2>/dev/null)
+TO_INSTALL=()
 for pkg in "${PACKAGES[@]}"; do
-    if brew list --formula | grep -q "^${pkg}$"; then
+    if echo "$INSTALLED_PACKAGES" | grep -q "^${pkg}$"; then
         log_success "$pkg already installed, skipping."
     else
-        log_info "Installing $pkg..."
-        brew install "$pkg"
+        log_info "Queuing $pkg for installation..."
+        TO_INSTALL+=("$pkg")
     fi
 done
+
+if [[ ${#TO_INSTALL[@]} -gt 0 ]]; then
+    log_info "Installing packages: ${TO_INSTALL[*]}"
+    brew install "${TO_INSTALL[@]}"
+fi
 
 # Install nvm and Node.js 22
 if [[ ! -d "$HOME/.nvm" ]]; then
