@@ -55,6 +55,18 @@ set them).
 - Git config (user, editor, credential helper using `gh`)
 - Claude Code config symlinks: `~/.claude/CLAUDE.md`, `~/.claude/settings.json`
 
+## Optional: swapfile
+
+Small VPSes often lack swap and get OOM-killed under transient memory spikes.
+`setup-swap` provisions a swapfile, enables it, persists it via `/etc/fstab`,
+and lowers `vm.swappiness` to 10. Idempotent.
+
+```bash
+sudo ./setup-swap                       # 8G swapfile at /swapfile
+sudo SWAP_SIZE=16G ./setup-swap         # custom size
+sudo SWAP_FILE=/mnt/swap ./setup-swap   # custom path
+```
+
 ## Idempotent
 
 Every section of both `bootstrap` and `install` is safe to re-run. Re-running

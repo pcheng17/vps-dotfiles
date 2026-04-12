@@ -1,0 +1,59 @@
+#!/bin/bash
+# Set up a swapfile to prevent OOM kills from transient memory spikes.
+# Idempotent: safe to re-run. Override size with SWAP_SIZE env var (default 8G).
+#
+# Usage: sudo ./setup-swap            # 8G swapfile at /swapfile
+#        sudo SWAP_SIZE=16G ./setup-swap
+#        sudo SWAP_FILE=/mnt/swap ./setup-swap
+
+set -e
+
+SWAP_SIZE="${SWAP_SIZE:-8G}"
+SWAP_FILE="${SWAP_FILE:-/swapfile}"
+SWAPPINESS="${SWAPPINESS:-10}"
+
+log_info()    { echo "[INFO] $*"; }
+log_success() { echo "[OK]   $*"; }
+log_error()   { echo "[ERR]  $*" >&2; }
+
+if [[ $EUID -ne 0 ]]; then
+    log_error "Must run as root (try: sudo $0)"
+    exit 1
+fi
+
+if swapon --show=NAME --noheadings | grep -qx "$SWAP_FILE"; then
+    log_success "Swap already active at $SWAP_FILE, nothing to do."
+    swapon --show
+    exit 0
+fi
+
+if [[ -e "$SWAP_FILE" ]]; then
+    log_error "$SWAP_FILE exists but is not active swap. Inspect/remove it manually before re-running."
+    exit 1
+fi
+
+log_info "Creating ${SWAP_SIZE} swapfile at $SWAP_FILE..."
+if ! fallocate -l "$SWAP_SIZE" "$SWAP_FILE" 2>/dev/null; then
+    log_info "fallocate failed (likely unsupported fs), falling back to dd..."
+    SWAP_MB=$(numfmt --from=iec "$SWAP_SIZE" | awk '{print int($1/1024/1024)}')
+    dd if=/dev/zero of="$SWAP_FILE" bs=1M count="$SWAP_MB" status=progress
+fi
+
+chmod 600 "$SWAP_FILE"
+mkswap "$SWAP_FILE"
+swapon "$SWAP_FILE"
+
+if ! grep -qE "^${SWAP_FILE}[[:space:]]" /etc/fstab; then
+    echo "$SWAP_FILE none swap sw 0 0" >> /etc/fstab
+    log_info "Added $SWAP_FILE to /etc/fstab for persistence across reboots."
+else
+    log_info "$SWAP_FILE already in /etc/fstab."
+fi
+
+# Lower swappiness so swap is only used under real memory pressure (dev-box default).
+echo "vm.swappiness=${SWAPPINESS}" > /etc/sysctl.d/99-swappiness.conf
+sysctl -q "vm.swappiness=${SWAPPINESS}"
+
+log_success "Swap configured (${SWAP_SIZE}, swappiness=${SWAPPINESS})."
+swapon --show
+free -h

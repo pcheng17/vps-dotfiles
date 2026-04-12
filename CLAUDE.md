@@ -26,6 +26,7 @@ Afterwards, log out and SSH back in as the new user, then run `gh auth login` on
     - `./install --root` (run as root) -- apt packages, GitHub CLI, Tailscale, Docker
     - `./install --user` (run as your user) -- Homebrew + formulae, uv/Python, nvm/Node, Claude Code, shell/git/Claude config symlinks
     - `sudo ./install --all` -- runs both phases; `--user` is re-invoked as `$SUDO_USER`
+- `setup-swap` -- Optional standalone script. Provisions a swapfile (default 8G at `/swapfile`), enables it, adds it to `/etc/fstab`, and sets `vm.swappiness=10`. Run as root. Override with `SWAP_SIZE` / `SWAP_FILE` / `SWAPPINESS` env vars. Idempotent. Not invoked by `bootstrap` or `install` -- run manually on hosts that need swap.
 - `claude/CLAUDE.md` -- The user's global Claude Code instructions (symlinked to `~/.claude/CLAUDE.md`).
 - `claude/settings.json` -- Claude Code settings (symlinked to `~/.claude/settings.json`).
 
