@@ -4,22 +4,58 @@ Bootstrap a fresh Ubuntu VPS with development tools and configuration.
 
 ## Usage
 
+SSH in as `root` on a fresh VPS and run:
+
 ```bash
-git clone <repo-url> ~/.vps-dotfiles
-cd ~/.vps-dotfiles
-./install
+bash <(curl -fsSL https://raw.githubusercontent.com/pcheng17/vps-dotfiles/main/bootstrap)
 ```
+
+Bootstrap will:
+
+1. Prompt for a username to create (or reuse if it already exists), add them to `sudo`, and set a password.
+2. Prompt for `git user.name` and `git user.email` (passed through to the user phase as `GIT_NAME` / `GIT_EMAIL`).
+3. Copy root's `~/.ssh/authorized_keys` to the new user so you can SSH in as them.
+4. Clone this repo into `~<user>/.vps-dotfiles`.
+5. Run `install --root` -- apt packages, GitHub CLI, Tailscale, Docker.
+6. Re-exec `install --user` as the new user -- Homebrew + formulae, uv/Python, nvm/Node, Claude Code, config symlinks.
+
+Afterwards, log out, SSH back in as the new user, and run `gh auth login` once.
+
+## Manual invocation
+
+If you've already cloned the repo and just want to run a phase:
+
+```bash
+sudo ./install --root                                        # system packages (run as root)
+GIT_NAME="Your Name" GIT_EMAIL="you@example.com" \
+    ./install --user                                         # user-level tools (run as your user)
+sudo ./install --all                                         # both phases (requires SUDO_USER)
+```
+
+`GIT_NAME` / `GIT_EMAIL` are optional on `--user` -- if unset, `user.name` and
+`user.email` are left untouched (useful for re-runs after bootstrap has already
+set them).
 
 ## What it sets up
 
-- **Homebrew** as the package manager
-- **Dev packages**: cmake, gcc, go, ninja, neovim, fzf, fd, gh, ripgrep, rust, lazygit, lld, llvm, uv, and more
-- **nvm** + **Node.js 22**
-- **Claude Code** CLI
-- **Docker Engine**
-- **Claude Code config**: symlinks `claude/CLAUDE.md` and `claude/settings.json` into `~/.claude/`
+**Root phase (`--root`)**
+
+- apt packages: clang, cmake, build-essential, ninja-build
+- GitHub CLI (`gh`) via the official apt repo
+- Tailscale (via `tailscale.com/install.sh`)
+- Docker Engine (via `get.docker.com`); target user added to the `docker` group
+
+**User phase (`--user`)**
+
+- Homebrew + formulae: lazygit, neovim, fzf, fd, opencode, ripgrep, uv
+- Python 3.14 via `uv`
+- `nvm` + Node.js 22
+- Claude Code CLI
+- Shell config symlinks: `~/.bashrc`, `~/.bash_aliases`
+- Git config (user, editor, credential helper using `gh`)
+- Claude Code config symlinks: `~/.claude/CLAUDE.md`, `~/.claude/settings.json`
 
 ## Idempotent
 
-The install script is idempotent -- safe to re-run at any time. Each section
-checks whether its target is already installed before doing anything.
+Every section of both `bootstrap` and `install` is safe to re-run. Re-running
+`bootstrap` fast-forward-pulls the repo and skips anything already installed.

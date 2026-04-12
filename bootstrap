@@ -1,0 +1,77 @@
+#!/bin/bash
+set -e
+
+REPO_URL="https://github.com/pcheng17/vps-dotfiles"
+
+log_info()    { echo "[INFO] $*"; }
+log_success() { echo "[OK]   $*"; }
+log_error()   { echo "[ERR]  $*" >&2; }
+
+if [[ $EUID -ne 0 ]]; then
+    log_error "Run bootstrap as root. On a fresh VPS: ssh root@<host>, then re-run."
+    exit 1
+fi
+
+if ! command -v git &>/dev/null; then
+    log_info "Installing git..."
+    apt-get update -qq
+    apt-get install -y git
+fi
+
+read -rp "Enter username to create (or reuse if it already exists): " TARGET_USER
+if [[ -z "$TARGET_USER" ]]; then
+    log_error "Username cannot be empty."
+    exit 1
+fi
+
+read -rp "Git user.name: " GIT_NAME
+if [[ -z "$GIT_NAME" ]]; then
+    log_error "Git user.name cannot be empty."
+    exit 1
+fi
+
+read -rp "Git user.email: " GIT_EMAIL
+if [[ -z "$GIT_EMAIL" ]]; then
+    log_error "Git user.email cannot be empty."
+    exit 1
+fi
+
+if id "$TARGET_USER" &>/dev/null; then
+    log_success "User $TARGET_USER already exists, skipping creation."
+else
+    log_info "Creating user $TARGET_USER..."
+    useradd -m -s /bin/bash -G sudo "$TARGET_USER"
+    log_info "Set a password for $TARGET_USER:"
+    passwd "$TARGET_USER"
+fi
+
+TARGET_HOME=$(getent passwd "$TARGET_USER" | cut -d: -f6)
+if [[ -z "$TARGET_HOME" || ! -d "$TARGET_HOME" ]]; then
+    log_error "Could not resolve home directory for $TARGET_USER."
+    exit 1
+fi
+
+# Copy root's SSH authorized_keys so the new user can log in immediately.
+if [[ -f /root/.ssh/authorized_keys ]]; then
+    log_info "Copying SSH authorized_keys from root to $TARGET_USER..."
+    install -d -m 700 -o "$TARGET_USER" -g "$TARGET_USER" "$TARGET_HOME/.ssh"
+    install -m 600 -o "$TARGET_USER" -g "$TARGET_USER" \
+        /root/.ssh/authorized_keys "$TARGET_HOME/.ssh/authorized_keys"
+fi
+
+TARGET_REPO="$TARGET_HOME/.vps-dotfiles"
+if [[ -d "$TARGET_REPO/.git" ]]; then
+    log_info "Updating existing clone at $TARGET_REPO..."
+    sudo -u "$TARGET_USER" -H git -C "$TARGET_REPO" pull --ff-only
+else
+    log_info "Cloning $REPO_URL into $TARGET_REPO..."
+    sudo -u "$TARGET_USER" -H git clone "$REPO_URL" "$TARGET_REPO"
+fi
+
+cd "$TARGET_REPO"
+TARGET_USER="$TARGET_USER" ./install --root
+sudo -u "$TARGET_USER" -H \
+    env GIT_NAME="$GIT_NAME" GIT_EMAIL="$GIT_EMAIL" \
+    ./install --user
+
+log_success "Bootstrap complete. SSH in as $TARGET_USER and run 'gh auth login'."

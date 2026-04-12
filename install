@@ -2,133 +2,198 @@
 set -e
 
 # Packages to install
-BREW_PACKAGES=(lazygit neovim fzf fd gh opencode ripgrep uv)
+BREW_PACKAGES=(lazygit neovim fzf fd opencode ripgrep uv)
 APT_PACKAGES=(clang cmake build-essential ninja-build)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-log_info() { echo "[INFO] $*"; }
+log_info()    { echo "[INFO] $*"; }
 log_success() { echo "[OK]   $*"; }
+log_error()   { echo "[ERR]  $*" >&2; }
 
-# Set up Claude Code config
-mkdir -p "$HOME/.claude"
-ln -sf "$SCRIPT_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
-ln -sf "$SCRIPT_DIR/claude/settings.json" "$HOME/.claude/settings.json"
-log_success "Claude Code config symlinked."
+usage() {
+    cat <<EOF
+Usage: $0 <--root|--user|--all>
+  --root   Install system packages (apt, gh, Tailscale, Docker). Run as root.
+  --user   Install user-level tools (brew, nvm, uv, Claude Code, configs). Run as your user.
+  --all    Run --root then --user. Invoke via sudo; SUDO_USER must be set.
+EOF
+}
 
-# Set up shell config
-ln -sf "$SCRIPT_DIR/shell/bashrc" "$HOME/.bashrc"
-ln -sf "$SCRIPT_DIR/shell/bash_aliases" "$HOME/.bash_aliases"
-log_success "Shell config symlinked."
-
-# Set up essential git configuration
-log_info "Configuring git..."
-git config --global user.name "Peter Cheng"
-git config --global user.email "7921604+pcheng17@users.noreply.github.com"
-git config --global core.editor "nvim"
-git config --global init.defaultBranch "main"
-git config --global pull.rebase "false"
-git config --global rebase.updaterefs "true"
-git config --global --replace-all credential.https://github.com.helper "!$(brew --prefix)/bin/gh auth git-credential"
-log_success "Git configured."
-
-# Install apt packages
-APT_TO_INSTALL=()
-for pkg in "${APT_PACKAGES[@]}"; do
-    if dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed"; then
-        log_success "$pkg already installed, skipping."
-    else
-        log_info "Queuing $pkg for apt installation..."
-        APT_TO_INSTALL+=("$pkg")
+install_root() {
+    if [[ $EUID -ne 0 ]]; then
+        log_error "--root must run as root (try: sudo $0 --root)"
+        exit 1
     fi
-done
 
-if [[ ${#APT_TO_INSTALL[@]} -gt 0 ]]; then
-    log_info "Installing apt packages: ${APT_TO_INSTALL[*]}"
-    sudo apt-get update -qq
-    sudo apt-get install -y "${APT_TO_INSTALL[@]}"
-fi
+    # Install apt packages
+    APT_TO_INSTALL=()
+    for pkg in "${APT_PACKAGES[@]}"; do
+        if dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed"; then
+            log_success "$pkg already installed, skipping."
+        else
+            log_info "Queuing $pkg for apt installation..."
+            APT_TO_INSTALL+=("$pkg")
+        fi
+    done
 
-# Install Homebrew if not already installed
-if ! command -v brew &>/dev/null; then
-    log_info "Installing Homebrew..."
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if [[ ${#APT_TO_INSTALL[@]} -gt 0 ]]; then
+        log_info "Installing apt packages: ${APT_TO_INSTALL[*]}"
+        apt-get update -qq
+        apt-get install -y "${APT_TO_INSTALL[@]}"
+    fi
+
+    # Install GitHub CLI from its official apt repo
+    if ! command -v gh &>/dev/null; then
+        log_info "Installing GitHub CLI..."
+        apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+        apt-add-repository -y https://cli.github.com/packages
+        apt update
+        apt install -y gh
+    else
+        log_success "gh already installed, skipping."
+    fi
+
+    # Install Tailscale
+    if ! command -v tailscale &>/dev/null; then
+        log_info "Installing Tailscale..."
+        curl -fsSL https://tailscale.com/install.sh | sh
+    else
+        log_success "Tailscale already installed, skipping."
+    fi
+
+    # Install Docker Engine
+    if ! command -v docker &>/dev/null; then
+        log_info "Installing Docker Engine..."
+        curl -fsSL https://get.docker.com | sh
+        DOCKER_USER="${TARGET_USER:-${SUDO_USER:-}}"
+        if [[ -n "$DOCKER_USER" ]]; then
+            usermod -aG docker "$DOCKER_USER"
+            log_info "Added $DOCKER_USER to docker group. Log out and back in for it to take effect."
+        else
+            log_info "TARGET_USER/SUDO_USER not set; skipping docker group assignment. Run 'usermod -aG docker <user>' manually."
+        fi
+    else
+        log_success "Docker already installed, skipping."
+    fi
+}
+
+install_user() {
+    if [[ $EUID -eq 0 ]]; then
+        log_error "--user must not run as root (it installs tools under \$HOME)"
+        exit 1
+    fi
+
+    # Set up Claude Code config
+    mkdir -p "$HOME/.claude"
+    ln -sf "$SCRIPT_DIR/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+    ln -sf "$SCRIPT_DIR/claude/settings.json" "$HOME/.claude/settings.json"
+    log_success "Claude Code config symlinked."
+
+    # Set up shell config
+    ln -sf "$SCRIPT_DIR/shell/bashrc" "$HOME/.bashrc"
+    ln -sf "$SCRIPT_DIR/shell/bash_aliases" "$HOME/.bash_aliases"
+    log_success "Shell config symlinked."
+
+    # Set up essential git configuration
+    log_info "Configuring git..."
+    if [[ -n "${GIT_NAME:-}" && -n "${GIT_EMAIL:-}" ]]; then
+        git config --global user.name "$GIT_NAME"
+        git config --global user.email "$GIT_EMAIL"
+    else
+        log_info "GIT_NAME/GIT_EMAIL not set; leaving user.name/user.email untouched."
+    fi
+    git config --global core.editor "nvim"
+    git config --global init.defaultBranch "main"
+    git config --global pull.rebase "false"
+    git config --global rebase.updaterefs "true"
+    git config --global --replace-all credential.https://github.com.helper "!gh auth git-credential"
+    log_success "Git configured."
+
+    # Install Homebrew if not already installed
+    if ! command -v brew &>/dev/null; then
+        log_info "Installing Homebrew..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    else
+        log_success "Homebrew already installed, skipping."
+    fi
+
+    # Ensure brew is in PATH
     eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-else
-    log_success "Homebrew already installed, skipping."
-fi
 
-# Ensure brew is in PATH
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    INSTALLED_PACKAGES=$(brew list --formula 2>/dev/null)
+    TO_INSTALL=()
+    for pkg in "${BREW_PACKAGES[@]}"; do
+        if echo "$INSTALLED_PACKAGES" | grep -q "^${pkg}$"; then
+            log_success "$pkg already installed, skipping."
+        else
+            log_info "Queuing $pkg for installation..."
+            TO_INSTALL+=("$pkg")
+        fi
+    done
 
-INSTALLED_PACKAGES=$(brew list --formula 2>/dev/null)
-TO_INSTALL=()
-for pkg in "${BREW_PACKAGES[@]}"; do
-    if echo "$INSTALLED_PACKAGES" | grep -q "^${pkg}$"; then
-        log_success "$pkg already installed, skipping."
-    else
-        log_info "Queuing $pkg for installation..."
-        TO_INSTALL+=("$pkg")
+    if [[ ${#TO_INSTALL[@]} -gt 0 ]]; then
+        log_info "Installing packages: ${TO_INSTALL[*]}"
+        brew install "${TO_INSTALL[@]}"
     fi
-done
 
-if [[ ${#TO_INSTALL[@]} -gt 0 ]]; then
-    log_info "Installing packages: ${TO_INSTALL[*]}"
-    brew install "${TO_INSTALL[@]}"
-fi
+    # Install Python 3.14 via uv
+    if uv python find 3.14 &>/dev/null; then
+        log_success "Python 3.14 already installed via uv, skipping."
+    else
+        log_info "Installing Python 3.14 via uv..."
+        uv python install 3.14
+        log_success "Python 3.14 installed."
+    fi
 
-# Install Python 3.14 via uv
-if uv python find 3.14 &>/dev/null; then
-    log_success "Python 3.14 already installed via uv, skipping."
-else
-    log_info "Installing Python 3.14 via uv..."
-    uv python install 3.14
-    log_success "Python 3.14 installed."
-fi
+    # Install nvm and Node.js 22
+    if [[ ! -d "$HOME/.nvm" ]]; then
+        log_info "Installing nvm..."
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+    else
+        log_success "nvm already installed, skipping."
+    fi
 
-# Install nvm and Node.js 22
-if [[ ! -d "$HOME/.nvm" ]]; then
-    log_info "Installing nvm..."
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-else
-    log_success "nvm already installed, skipping."
-fi
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
 
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+    if ! nvm ls 22 &>/dev/null; then
+        log_info "Installing Node.js 22..."
+        nvm install 22
+        nvm alias default 22
+    else
+        log_success "Node.js 22 already installed, skipping."
+    fi
 
-if ! nvm ls 22 &>/dev/null; then
-    log_info "Installing Node.js 22..."
-    nvm install 22
-    nvm alias default 22
-else
-    log_success "Node.js 22 already installed, skipping."
-fi
+    # Install Claude Code if not already installed
+    if ! command -v claude &>/dev/null; then
+        log_info "Installing Claude Code..."
+        curl -fsSL https://claude.ai/install.sh | bash
+    else
+        log_success "Claude Code already installed, skipping."
+    fi
+}
 
-# Install Claude Code if not already installed
-if ! command -v claude &>/dev/null; then
-    log_info "Installing Claude Code..."
-    curl -fsSL https://claude.ai/install.sh | bash
-else
-    log_success "Claude Code already installed, skipping."
-fi
-
-# Install Tailscale if not already installed
-if ! command -v tailscale &>/dev/null; then
-    log_info "Installing Tailscale..."
-    curl -fsSL https://tailscale.com/install.sh | sh
-else
-    log_success "Tailscale already installed, skipping."
-fi
-
-# Install Docker Engine if not already installed
-if ! command -v docker &>/dev/null; then
-    log_info "Installing Docker Engine..."
-    curl -fsSL https://get.docker.com | sh
-    sudo usermod -aG docker "$USER"
-    log_info "Docker installed. You may need to log out and back in for group changes to take effect."
-else
-    log_success "Docker already installed, skipping."
-fi
+case "${1:-}" in
+    --root)
+        install_root
+        ;;
+    --user)
+        install_user
+        ;;
+    --all)
+        if [[ $EUID -ne 0 || -z "${SUDO_USER:-}" ]]; then
+            log_error "--all must be invoked via sudo with SUDO_USER set (try: sudo $0 --all)"
+            exit 1
+        fi
+        install_root
+        sudo -u "$SUDO_USER" -H "$0" --user
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac
 
 log_success "Done!"

@@ -2,16 +2,38 @@
 
 This repo lives at `~/.vps-dotfiles`.
 
+## Fresh VPS bootstrap
+
+SSH in as root, then run:
+
+```
+bash <(curl -fsSL https://raw.githubusercontent.com/pcheng17/vps-dotfiles/main/bootstrap)
+```
+
+Bootstrap (running as root) will:
+1. Prompt for a username to create (or reuse if it exists), add them to `sudo`, and set a password.
+2. Copy root's `~/.ssh/authorized_keys` to the new user so you can SSH in as them.
+3. Clone this repo into that user's `~/.vps-dotfiles`.
+4. Run `install --root` (apt, gh, Tailscale, Docker).
+5. Re-exec `install --user` as the new user (brew + formulae, uv, nvm, Claude Code, config symlinks).
+
+Afterwards, log out and SSH back in as the new user, then run `gh auth login` once.
+
 ## Structure
 
-- `install` -- The main entry point. An idempotent bash script that bootstraps a VPS with all required tools and configuration.
+- `bootstrap` -- One-command entry point for a fresh VPS. Must run as root. Creates a target user, then runs both `install --root` and `install --user` (the latter as the new user).
+- `install` -- Idempotent bash script that provisions the VPS. Requires a mode flag:
+    - `./install --root` (run as root) -- apt packages, GitHub CLI, Tailscale, Docker
+    - `./install --user` (run as your user) -- Homebrew + formulae, uv/Python, nvm/Node, Claude Code, shell/git/Claude config symlinks
+    - `sudo ./install --all` -- runs both phases; `--user` is re-invoked as `$SUDO_USER`
 - `claude/CLAUDE.md` -- The user's global Claude Code instructions (symlinked to `~/.claude/CLAUDE.md`).
 - `claude/settings.json` -- Claude Code settings (symlinked to `~/.claude/settings.json`).
 
 ## Adding dependencies
 
-- For Homebrew packages, add them to the `PACKAGES` array at the top of `install`.
-- For tools that require custom installation, add a new idempotent section to `install` following the existing pattern (check if already installed, skip if so, install otherwise).
+- Homebrew (user) packages: add to the `BREW_PACKAGES` array at the top of `install`.
+- apt (root) packages: add to the `APT_PACKAGES` array at the top of `install`.
+- Tools that require custom installation: add a new idempotent block to the relevant `install_root` or `install_user` function (check if already installed, skip if so, install otherwise).
 
 ## Important
 
