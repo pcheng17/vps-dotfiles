@@ -46,10 +46,17 @@ install_root() {
     # Install GitHub CLI from its official apt repo
     if ! command -v gh &>/dev/null; then
         log_info "Installing GitHub CLI..."
-        apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
-        apt-add-repository -y https://cli.github.com/packages
-        apt update
-        apt install -y gh
+        # Remove any stale entry from older versions of this script that used
+        # apt-add-repository (which wrongly appended the Ubuntu codename).
+        rm -f /etc/apt/sources.list.d/archive_uri-https_cli_github_com_packages-*.list
+        install -d -m 755 /etc/apt/keyrings
+        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+            -o /etc/apt/keyrings/githubcli-archive-keyring.gpg
+        chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+            > /etc/apt/sources.list.d/github-cli.list
+        apt-get update -qq
+        apt-get install -y gh
     else
         log_success "gh already installed, skipping."
     fi
