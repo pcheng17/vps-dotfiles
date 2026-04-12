@@ -113,6 +113,14 @@ else
     log_success "Claude Code already installed, skipping."
 fi
 
+# Install Tailscale if not already installed
+if ! command -v tailscale &>/dev/null; then
+    log_info "Installing Tailscale..."
+    curl -fsSL https://tailscale.com/install.sh | sh
+else
+    log_success "Tailscale already installed, skipping."
+fi
+
 # Install Docker Engine if not already installed
 if ! command -v docker &>/dev/null; then
     log_info "Installing Docker Engine..."
