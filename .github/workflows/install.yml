@@ -9,13 +9,25 @@ jobs:
   install:
     name: Run install script
     runs-on: ubuntu-latest
+    env:
+      GIT_NAME: Test User
+      GIT_EMAIL: test@example.com
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: First run
-        run: ./install
+      - name: Syntax check
+        run: bash -n install bootstrap
 
-      - name: Second run (idempotency check)
-        run: ./install
+      - name: install --root (first run)
+        run: sudo ./install --root
+
+      - name: install --root (idempotency check)
+        run: sudo ./install --root
+
+      - name: install --user (first run)
+        run: ./install --user
+
+      - name: install --user (idempotency check)
+        run: ./install --user
