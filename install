@@ -2,8 +2,8 @@
 set -e
 
 # Packages to install
-BREW_PACKAGES=(cmake lazygit ninja neovim fzf fd gh opencode ripgrep uv)
-APT_PACKAGES=(clang build-essential)
+BREW_PACKAGES=(lazygit neovim fzf fd gh opencode ripgrep uv)
+APT_PACKAGES=(clang cmake build-essential ninja-build)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
