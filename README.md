@@ -40,14 +40,13 @@ set them).
 
 **Root phase (`--root`)**
 
-- apt packages: clang, cmake, build-essential, ninja-build
-- GitHub CLI (`gh`) via the official apt repo
+- apt packages: clang, build-essential, python3-venv
 - Tailscale (via `tailscale.com/install.sh`)
 - Docker Engine (via `get.docker.com`); target user added to the `docker` group
 
 **User phase (`--user`)**
 
-- Homebrew + formulae: lazygit, neovim, fzf, fd, opencode, ripgrep, uv
+- Homebrew + formulae: cmake, fd, fzf, gh, just, lazygit, neovim, ninja, opencode, ripgrep, uv
 - Python 3.14 via `uv`
 - `nvm` + Node.js 22
 - Claude Code CLI
