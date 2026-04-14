@@ -14,7 +14,7 @@ Bootstrap (running as root) will:
 1. Prompt for a username to create (or reuse if it exists), add them to `sudo`, and set a password.
 2. Copy root's `~/.ssh/authorized_keys` to the new user so you can SSH in as them.
 3. Clone this repo into that user's `~/.vps-dotfiles`.
-4. Run `install --root` (apt, gh, Tailscale, Docker).
+4. Run `install --root` (apt, Tailscale, Docker).
 5. Re-exec `install --user` as the new user (brew + formulae, uv, nvm, Claude Code, config symlinks).
 
 Afterwards, log out and SSH back in as the new user, then run `gh auth login` once.
