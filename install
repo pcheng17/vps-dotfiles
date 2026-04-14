@@ -2,7 +2,7 @@
 set -e
 
 # Packages to install
-BREW_PACKAGES=(cmake fd fzf gh just lazygit neovim ninja opencode ripgrep uv)
+BREW_PACKAGES=(clang-format cmake fd fzf gh just lazygit neovim ninja opencode ripgrep uv)
 APT_PACKAGES=(clang build-essential python3-venv)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
