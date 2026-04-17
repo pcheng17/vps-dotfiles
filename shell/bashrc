@@ -4,6 +4,8 @@
 export DEV_DIR="$HOME/dev"
 export DOTS="$HOME/.dotfiles"
 
+export EDITOR=$(command -v nvim || command -v vim)
+
 # If not running interactively, don't do anything
 case $- in
     *i*) ;;
