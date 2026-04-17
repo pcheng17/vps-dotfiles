@@ -8,7 +8,6 @@ alias lg='lazygit'
 alias oc='opencode'
 alias v='nvim'
 alias ta='tmux attach'
-alias ts='source ~/bin/tmux-sessionizer'
 
 alias gwls='git worktree list'
 alias gwa='git worktree add'
