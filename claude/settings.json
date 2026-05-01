@@ -3,6 +3,7 @@
     "commit": "",
     "pr": ""
   },
+  "model": "sonnet[1m]",
   "statusLine": {
     "type": "command",
     "command": "sh -c 'branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo no-branch); jq -r \"\\\" $branch | \\(.model.display_name) | \\(.context_window.used_percentage // 0)% context used\\\"\"'"
@@ -17,5 +18,5 @@
     }
   },
   "skipDangerousModePermissionPrompt": true,
-  "model": "sonnet[1m]"
+  "agentPushNotifEnabled": true
 }
