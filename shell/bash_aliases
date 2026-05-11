@@ -11,4 +11,4 @@ alias ta='tmux attach'
 
 alias gwls='git worktree list'
 alias gwa='git worktree add'
-alias gwrm='git wotkree remove'
+alias gwrm='git worktree remove'
