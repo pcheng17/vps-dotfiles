@@ -171,6 +171,14 @@ install_user() {
     else
         log_success "Claude Code already installed, skipping."
     fi
+
+    # Install pi
+    if ! command -v pi &>/dev/null; then
+        log_info "Installing pi..."
+        curl -fsSL https://pi.dev/install.sh | sh
+    else
+        log_success "pi already installed, skipping."
+    fi
 }
 
 case "${1:-}" in
