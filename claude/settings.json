@@ -3,6 +3,16 @@
     "commit": "",
     "pr": ""
   },
+  "permissions": {
+    "allow": [
+      "Bash(./build/relwithdebinfo/tests/lovamap_tests:*)",
+      "Bash(cmake:*)",
+      "Bash(clang-format:*)",
+      "Bash(ls:*)",
+      "Bash(git:*)"
+    ],
+    "defaultMode": "default"
+  },
   "model": "sonnet[1m]",
   "statusLine": {
     "type": "command",
@@ -18,5 +28,6 @@
     }
   },
   "skipDangerousModePermissionPrompt": true,
+  "remoteControlAtStartup": true,
   "agentPushNotifEnabled": true
 }
