@@ -136,3 +136,10 @@ export NVM_DIR="$HOME/.nvm"
 if [ -e $DOTS/sourceme.sh ]; then
     source $DOTS/sourceme.sh
 fi
+
+# Auto-attach to a running tmux session when connecting over SSH
+if [ -n "$SSH_CONNECTION" ] && [ -z "$TMUX" ]; then
+    if tmux list-sessions &>/dev/null; then
+        tmux attach-session
+    fi
+fi
