@@ -39,3 +39,7 @@ Afterwards, log out and SSH back in as the new user, then run `gh auth login` on
 ## Important
 
 The install script must remain idempotent -- every section must be safe to re-run.
+
+## Writing style
+
+- Never use em dashes. Always use hyphens instead.
