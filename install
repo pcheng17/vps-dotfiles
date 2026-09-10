@@ -2,8 +2,8 @@
 set -e
 
 # Packages to install
-BREW_PACKAGES=(bob btop clang-format cmake fd ffmpeg fzf gh just lazygit ninja opencode pnpm ripgrep tree-sitter-cli uv)
-APT_PACKAGES=(clang clang-tidy build-essential python3-venv pkg-config libcairo2-dev libpango1.0-dev)
+BREW_PACKAGES=(bob btop clang-format cmake fd ffmpeg fzf gh go just lazygit ninja opencode pnpm ripgrep tree-sitter-cli uv)
+APT_PACKAGES=(clang clang-tidy build-essential python3-venv pkg-config libcairo2-dev libpango1.0-dev curl zip unzip tar)
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -178,6 +178,20 @@ install_user() {
         curl -fsSL https://pi.dev/install.sh | sh
     else
         log_success "pi already installed, skipping."
+    fi
+
+    # Install vcpkg
+    VCPKG_DIR="$HOME/dev/vcpkg"
+    if [[ ! -x "$VCPKG_DIR/vcpkg" ]]; then
+        log_info "Installing vcpkg..."
+        mkdir -p "$HOME/dev"
+        if [[ ! -d "$VCPKG_DIR" ]]; then
+            git clone https://github.com/microsoft/vcpkg.git "$VCPKG_DIR"
+        fi
+        "$VCPKG_DIR/bootstrap-vcpkg.sh" -disableMetrics
+        log_success "vcpkg installed."
+    else
+        log_success "vcpkg already installed, skipping."
     fi
 }
 
