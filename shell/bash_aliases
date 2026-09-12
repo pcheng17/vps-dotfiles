@@ -11,4 +11,18 @@ alias v='nvim'
 
 alias gwls='git worktree list'
 alias gwa='git worktree add'
-alias gwrm='git worktree remove'
+
+gwrm() {
+    if ! command -v fzf &>/dev/null; then
+        git worktree remove "$@"
+        return
+    fi
+    local wt
+    wt=$(git worktree list | fzf --prompt="Remove worktree> " | awk '{print $1}')
+    [[ -z "$wt" ]] && return 0
+    if ! git worktree remove "$wt" 2>/dev/null; then
+        read -r -p "Worktree has changes. Force remove? [y/N] " -n 1 REPLY
+        echo
+        [[ "$REPLY" =~ ^[Yy]$ ]] && git worktree remove --force "$wt"
+    fi
+}
