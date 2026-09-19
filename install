@@ -180,6 +180,22 @@ install_user() {
         log_success "pi already installed, skipping."
     fi
 
+    # Install xterm-ghostty terminfo alias (so SSH sessions from a Ghostty client work with
+    # tmux/vim). Homebrew's ncurses ships a "ghostty" entry, but Ghostty's client sets
+    # TERM=xterm-ghostty, so derive an aliased entry under that name from it.
+    if infocmp xterm-ghostty &>/dev/null; then
+        log_success "xterm-ghostty terminfo already installed, skipping."
+    elif ! infocmp ghostty &>/dev/null; then
+        log_info "No 'ghostty' terminfo entry found (expected from brew's ncurses); skipping xterm-ghostty install."
+    else
+        log_info "Installing xterm-ghostty terminfo..."
+        GHOSTTY_TERMINFO_TMP="$(mktemp)"
+        infocmp -x ghostty | sed '1{/^#/d}' | sed '0,/^ghostty|/{s/^ghostty|/xterm-ghostty|ghostty|/}' > "$GHOSTTY_TERMINFO_TMP"
+        tic -x -o "$HOME/.terminfo" "$GHOSTTY_TERMINFO_TMP"
+        rm -f "$GHOSTTY_TERMINFO_TMP"
+        log_success "xterm-ghostty terminfo installed."
+    fi
+
     # Install vcpkg
     VCPKG_DIR="$HOME/dev/vcpkg"
     if [[ ! -x "$VCPKG_DIR/vcpkg" ]]; then
