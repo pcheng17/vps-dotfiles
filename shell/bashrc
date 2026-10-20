@@ -146,3 +146,4 @@ if [ -n "$SSH_CONNECTION" ] && [ -z "$TMUX" ]; then
         tmux attach-session
     fi
 fi
+. "$HOME/.rokit/env"
